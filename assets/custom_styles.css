@@ -1,0 +1,7 @@
+/* custom_styles.css */
+.datepicker-range {
+    font-family: Helvetica Neue; /* Change font family */
+    font-size: 10px; /* Change font size */
+    width: 300px;
+    Height: 15px;
+}
