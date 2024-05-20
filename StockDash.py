@@ -66,13 +66,14 @@ sidebar = html.Div([
                    'margin-bottom': '10px',  # Adjust the space between options
                    'width': '285px', # Adjust the width of the dropdown
                    'height':'100px', # Adjust the height of the dropdown
+                   'overflowY': 'auto',
                },  
     )], style={
                'verticalAlign':'top', 
                'font_family': 'Helvetica Neue',
                'font_size': '10px',
                'text_align': 'center',
-               'overflowY': 'auto',
+            #    'overflowY': 'auto',
                'maxHeight': '500px',
                'minHeight': '100px',
                'zIndex': 1000,
@@ -116,7 +117,7 @@ sidebar = html.Div([
 
 content = html.Div([
     html.Div([
-        html.H1('Stock Dashboard', style={'backgroundColor':'#1E1E1E', 
+        html.H2('Stock Dashboard', style={'backgroundColor':'#1E1E1E', 
                                           'font_family': 'Helvetica Neue',
                                           'color': '#FFFFFF'}),
         dcc.Graph(
@@ -131,7 +132,8 @@ content = html.Div([
         #                                  'color': '#FFFFFF'}),
         dcc.Graph(id='my_graph_volume', 
                   figure=go.Figure())], 
-                  style={'flex':1}),
+                  style={'flex':1, 
+                         'marginTop':'30px'}),
                ], className='body', 
                   style=CONTENT_STYLE)
 
@@ -153,12 +155,11 @@ app.layout = html.Div([dcc.Location(id='url'), sidebar, content])
 def update_graph(n_clicks, stock_ticker, start_date, end_date):
     start = datetime.strptime(start_date[:10], '%Y-%m-%d')
     end = datetime.strptime(end_date[:10], '%Y-%m-%d')
-    print('*********************************',start,end)
 
     fig_close  = go.Figure()
-    # fig_volume = go.Figure()
     fig_volume = make_subplots(rows=2, 
-                               cols=1, 
+                               cols=1,
+                               vertical_spacing=0.3,
                                subplot_titles=("Volume Average", "Closing Price Average"),
                                specs=[[{'type':'domain'}], [{'type':'domain'}]])
 
@@ -172,26 +173,34 @@ def update_graph(n_clicks, stock_ticker, start_date, end_date):
         vol_values.append(round(df.Volume.mean()))
         clo_values.append(round(df.Close.mean()))
 
-        fig_close.add_trace(go.Scatter(
-        x=df.index,
-        y=df.Close,
-        mode='lines',
-        showlegend=True,
-        name=tic
-    ))
+        fig_close.add_trace(go.Scatter(x=df.index,
+                                       y=df.Close,
+                                       mode='lines',
+                                       showlegend=True,
+                                       name=tic))
 
     fig_close.update_layout(
-        title=', '.join(stock_ticker)+' Closing Prices',
+        title=', '.join(stock_ticker),
+        xaxis_title="Date",
+        yaxis_title="Closing Prices",
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
-        font=dict(color='#FFFFFF')
+        font=dict(
+        family="Helvetica Neue",
+        size=15,
+        color="#FFFFFF"),
+        showlegend=False
     )
+
+    fig_close.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
+    fig_close.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
 
     fig_volume.add_trace(go.Pie(labels=labels, 
                                 values=vol_values, 
                                 hole=.5, 
                                 hoverinfo="label+percent+name", 
                                 textinfo='value'),1,1)
+
     fig_volume.add_trace(go.Pie(labels=labels, 
                                 values=clo_values, 
                                 hole=.5, 
@@ -201,15 +210,14 @@ def update_graph(n_clicks, stock_ticker, start_date, end_date):
     fig_volume.update_layout(
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
-        font=dict(color='#FFFFFF'))
-
-    fig_close.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
-    fig_close.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
+        font=dict(
+        family="Helvetica Neue",
+        size=15,
+        color="#FFFFFF"))
 
     fig_volume.layout.annotations[0].update(y=1.1,x=1.01)
     fig_volume.layout.annotations[1].update(y=.4,x=1.1)
-    # fig_volume.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
-    # fig_volume.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+    fig_volume.update_annotations(font=dict(family="Helvetica Neue", size=15))
 
     return fig_close, fig_volume
 
