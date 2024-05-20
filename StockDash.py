@@ -50,15 +50,27 @@ for tic in nsdq.index:
 
 sidebar = html.Div([
     html.Div([
-        html.H5('Change the plots sizes:', 
+        html.H5('Change the Price Fig size:', 
         style={'paddingRight':'30px', 
                'font_family':'Helvetica Neue',
                'font-size': '14px',
                'font-weight': 'bold'}),
-    dcc.Slider(1, 5, 1,
-               value=2,
-               id='my-slider'),
+    dcc.Slider(600, 1000, 100,
+               value=600,
+               id='my_slider'),
                ]),
+
+    html.Div([
+        html.H5('Change the Average Fig size:', 
+        style={'paddingRight':'30px', 
+               'font_family':'Helvetica Neue',
+               'font-size': '14px',
+               'font-weight': 'bold'}),
+    dcc.Slider(450, 650, 50,
+               value=450,
+               id='my_pie_slider'),
+               ]),
+
     html.Div([
         html.H5('Select stock symbols:', 
         style={'paddingRight':'30px', 
@@ -111,7 +123,7 @@ sidebar = html.Div([
              'flex':1}),
     html.Div([
         html.Button(
-            id='submit-button',
+            id='submit_button',
             n_clicks=0,
             children='Submit',
             style={'fontSize':20, 
@@ -137,14 +149,14 @@ content = html.Div([
         })
         ], id='scatter_plot', style={'flex':2}),
     html.Div([
-        # html.H1('Average Volume', style={'backgroundColor':'#1E1E1E', 
-        #                                  'font_family': 'Helvetica Neue',
-        #                                  'color': '#FFFFFF'}),
+        html.H2('More Information', style={'backgroundColor':'#1E1E1E', 
+                                         'font_family': 'Helvetica Neue',
+                                         'color': '#FFFFFF'}),
         dcc.Graph(id='my_graph_volume', 
                   figure=go.Figure())], 
                   id= 'pi_plot',
                   style={'flex':1, 
-                         'marginTop':'30px', 'marginLeft':'0px'}),
+                         'marginTop':'5px', 'marginLeft':'0px'}),
                ], className='body', 
                   style=CONTENT_STYLE)
 
@@ -159,13 +171,13 @@ app.layout = html.Div([dcc.Location(id='url'), sidebar, content])
 @app.callback(
     Output('my_graph', 'figure'),
     Output('my_graph_volume', 'figure'),
-    Output('scatter_plot', 'style'),
-    [Input('submit-button', 'n_clicks')],
-    [Input('my-slider', 'value')],
+    [Input('submit_button', 'n_clicks')],
+    [Input('my_slider', 'value')],
+    [Input('my_pie_slider', 'value')],
     [State('my_ticker_symbol', 'value'),
     State('my_date_picker', 'start_date'),
     State('my_date_picker', 'end_date')])
-def update_graph(n_clicks, step, stock_ticker, start_date, end_date):
+def update_graph(n_clicks, width_scatter, height_pie, stock_ticker, start_date, end_date):
     start = datetime.strptime(start_date[:10], '%Y-%m-%d')
     end = datetime.strptime(end_date[:10], '%Y-%m-%d')
 
@@ -207,6 +219,7 @@ def update_graph(n_clicks, step, stock_ticker, start_date, end_date):
 
     fig_close.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
     fig_close.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
+    fig_close.update_layout(width=int(width_scatter))
 
     fig_volume.add_trace(go.Pie(labels=labels, 
                                 values=vol_values, 
@@ -231,9 +244,10 @@ def update_graph(n_clicks, step, stock_ticker, start_date, end_date):
     fig_volume.layout.annotations[0].update(y=1.1,x=1.01)
     fig_volume.layout.annotations[1].update(y=.4,x=1.1)
     fig_volume.update_annotations(font=dict(family="Helvetica Neue", size=15))
+    fig_volume.update_layout(height=int(height_pie))
+
     
-    print(step)
-    return fig_close, fig_volume, {'flex':int(step), 'marginTop':'5px', 'marginRight':'0px'}
+    return fig_close, fig_volume
 
 if __name__ == '__main__':
     app.run_server(debug=True)
