@@ -50,6 +50,16 @@ for tic in nsdq.index:
 
 sidebar = html.Div([
     html.Div([
+        html.H5('Change the plots sizes:', 
+        style={'paddingRight':'30px', 
+               'font_family':'Helvetica Neue',
+               'font-size': '14px',
+               'font-weight': 'bold'}),
+    dcc.Slider(1, 5, 1,
+               value=2,
+               id='my-slider'),
+               ]),
+    html.Div([
         html.H5('Select stock symbols:', 
         style={'paddingRight':'30px', 
                'font_family':'Helvetica Neue',
@@ -125,15 +135,16 @@ content = html.Div([
         figure={'data': [{'x': [1], 'y': [1]}],
                 'layout': go.Layout(template='plotly_dark')
         })
-        ], style={'flex':2}),
+        ], id='scatter_plot', style={'flex':2}),
     html.Div([
         # html.H1('Average Volume', style={'backgroundColor':'#1E1E1E', 
         #                                  'font_family': 'Helvetica Neue',
         #                                  'color': '#FFFFFF'}),
         dcc.Graph(id='my_graph_volume', 
                   figure=go.Figure())], 
+                  id= 'pi_plot',
                   style={'flex':1, 
-                         'marginTop':'30px'}),
+                         'marginTop':'30px', 'marginLeft':'0px'}),
                ], className='body', 
                   style=CONTENT_STYLE)
 
@@ -148,11 +159,13 @@ app.layout = html.Div([dcc.Location(id='url'), sidebar, content])
 @app.callback(
     Output('my_graph', 'figure'),
     Output('my_graph_volume', 'figure'),
+    Output('scatter_plot', 'style'),
     [Input('submit-button', 'n_clicks')],
+    [Input('my-slider', 'value')],
     [State('my_ticker_symbol', 'value'),
     State('my_date_picker', 'start_date'),
     State('my_date_picker', 'end_date')])
-def update_graph(n_clicks, stock_ticker, start_date, end_date):
+def update_graph(n_clicks, step, stock_ticker, start_date, end_date):
     start = datetime.strptime(start_date[:10], '%Y-%m-%d')
     end = datetime.strptime(end_date[:10], '%Y-%m-%d')
 
@@ -218,8 +231,9 @@ def update_graph(n_clicks, stock_ticker, start_date, end_date):
     fig_volume.layout.annotations[0].update(y=1.1,x=1.01)
     fig_volume.layout.annotations[1].update(y=.4,x=1.1)
     fig_volume.update_annotations(font=dict(family="Helvetica Neue", size=15))
-
-    return fig_close, fig_volume
+    
+    print(step)
+    return fig_close, fig_volume, {'flex':int(step), 'marginTop':'5px', 'marginRight':'0px'}
 
 if __name__ == '__main__':
     app.run_server(debug=True)
