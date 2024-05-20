@@ -24,7 +24,7 @@ SIDEBAR_STYLE = {
     'bottom': 0,
     'width': '20rem',
     'padding': '2rem 1rem',
-    'background-color': '#DA70D6',
+    'background-color': '#6495ED',
     'font_family': 'Helvetica Neue',
     'overflowY': 'auto',
 }
@@ -37,25 +37,9 @@ CONTENT_STYLE = {
     'backgroundColor':'#1E1E1E', 
     'font_family': 'Helvetica Neue',
     'color': '#FFFFFF',
-}
-
-style_cell = {
-    'font_family': 'Helvetica Neue',
-    'font_size': '5px',
-    'text_align': 'center'
-}
-
-light_theme = {
-    'main-background': '#ffe7a6',
-    'header-text': '#376e00',
-    'sub-text': '#0c5703',
-}
-
-dark_theme = {
-    'main-background': '#000000',
-    'header-text': '#ff7575',
-    'sub-text': '#ffd175',
-}            
+    # 'display': 'flex', 
+    # 'justifyContent': 'center'
+}           
 
 nsdq = pd.read_csv('data/nasdaq_screener.csv')
 nsdq.set_index('Symbol', inplace=True)
@@ -81,13 +65,18 @@ sidebar = html.Div([
                    'font-size': '14px',  # Adjust the font size as needed
                    'margin-bottom': '10px',  # Adjust the space between options
                    'width': '285px', # Adjust the width of the dropdown
-                   'height':'30px'
+                   'height':'100px', # Adjust the height of the dropdown
                },  
-    )], style={'display':'inline-block', 
+    )], style={
                'verticalAlign':'top', 
                'font_family': 'Helvetica Neue',
                'font_size': '10px',
-               'text_align': 'center'
+               'text_align': 'center',
+               'overflowY': 'auto',
+               'maxHeight': '500px',
+               'minHeight': '100px',
+               'zIndex': 1000,
+               'marginBottom': '20px'
     }),
 
     html.Div([
@@ -106,8 +95,9 @@ sidebar = html.Div([
             className='datepicker-range',
             style={'fontSize':5,'display':'inline-block'}
         )
-    ],style={'marginTop':'20px', 
-             'font_family':'Helvetica Neue',}),
+    ], style={'marginTop':'20px', 
+             'font_family':'Helvetica Neue',
+             'flex':1}),
     html.Div([
         html.Button(
             id='submit-button',
@@ -116,7 +106,8 @@ sidebar = html.Div([
             style={'fontSize':20, 
                    'marginLeft':'100px', 
                    'marginTop':'30px', 
-                   'font_family': 'Helvetica Neue',}
+                   'font_family': 'Helvetica Neue',
+                   'flex':1}
         ),
     ]),
     ],
@@ -126,20 +117,23 @@ sidebar = html.Div([
 content = html.Div([
     html.Div([
         html.H1('Stock Dashboard', style={'backgroundColor':'#1E1E1E', 
-                                                'font_family': 'Helvetica Neue',
-                                                'color': '#FFFFFF'}),
+                                          'font_family': 'Helvetica Neue',
+                                          'color': '#FFFFFF'}),
         dcc.Graph(
         id='my_graph',
         figure={'data': [{'x': [1], 'y': [1]}],
                 'layout': go.Layout(template='plotly_dark')
-        })]),
+        })
+        ], style={'flex':2}),
     html.Div([
         # html.H1('Average Volume', style={'backgroundColor':'#1E1E1E', 
         #                                  'font_family': 'Helvetica Neue',
         #                                  'color': '#FFFFFF'}),
         dcc.Graph(id='my_graph_volume', 
-        figure=go.Figure())]),
-            ], style=CONTENT_STYLE)
+                  figure=go.Figure())], 
+                  style={'flex':1}),
+               ], className='body', 
+                  style=CONTENT_STYLE)
 
 app.layout = html.Div([dcc.Location(id='url'), sidebar, content])
 # app.layout = html.Div([
@@ -163,23 +157,27 @@ def update_graph(n_clicks, stock_ticker, start_date, end_date):
 
     fig_close  = go.Figure()
     # fig_volume = go.Figure()
-    fig_volume = make_subplots(rows=1, cols=2, specs=[[{'type':'domain'}, {'type':'domain'}]])
+    fig_volume = make_subplots(rows=2, 
+                               cols=1, 
+                               subplot_titles=("Volume Average", "Closing Price Average"),
+                               specs=[[{'type':'domain'}], [{'type':'domain'}]])
 
     labels = []
     vol_values = []
     clo_values = []
-    
+
     for tic in stock_ticker:
         df = web.get_data_yahoo(tic, start=start, end=end)
         labels.append(tic)
-        vol_values.append(df.Volume.mean())
-        clo_values.append(df.Close.mean())
+        vol_values.append(round(df.Volume.mean()))
+        clo_values.append(round(df.Close.mean()))
 
         fig_close.add_trace(go.Scatter(
         x=df.index,
         y=df.Close,
         mode='lines',
-        showlegend=False
+        showlegend=True,
+        name=tic
     ))
 
     fig_close.update_layout(
@@ -189,19 +187,31 @@ def update_graph(n_clicks, stock_ticker, start_date, end_date):
         font=dict(color='#FFFFFF')
     )
 
-    fig_volume.add_trace(go.Pie(labels=labels, values=vol_values, 
-    hole=.5, hoverinfo="label+percent+name", name='Volume Average'),1,1)
-    fig_volume.add_trace(go.Pie(labels=labels, values=clo_values, 
-    hole=.5, hoverinfo="label+percent+name", name='Closing Price Average'),1,2)
-
-    # fig_volume.add_trace(go.Pie(labels=labels, values=values, hole=.5))
+    fig_volume.add_trace(go.Pie(labels=labels, 
+                                values=vol_values, 
+                                hole=.5, 
+                                hoverinfo="label+percent+name", 
+                                textinfo='value'),1,1)
+    fig_volume.add_trace(go.Pie(labels=labels, 
+                                values=clo_values, 
+                                hole=.5, 
+                                hoverinfo="label+percent+name", 
+                                textinfo='value'),2,1)
 
     fig_volume.update_layout(
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
         font=dict(color='#FFFFFF'))
 
+    fig_close.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
+    fig_close.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
+
+    fig_volume.layout.annotations[0].update(y=1.1,x=1.01)
+    fig_volume.layout.annotations[1].update(y=.4,x=1.1)
+    # fig_volume.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+    # fig_volume.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+
     return fig_close, fig_volume
 
 if __name__ == '__main__':
-    app.run_server()
+    app.run_server(debug=True)

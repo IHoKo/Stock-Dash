@@ -3,5 +3,20 @@
     font-family: Helvetica Neue; /* Change font family */
     font-size: 10px; /* Change font size */
     width: 300px;
-    Height: 15px;
+    Height: 10px;
+}
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));  /* Responsive grid layout */
+    gap: 20px;  /* Spacing between grid items */
+}
+
+.grid-item {
+    background-color: #f0f0f0;
+    padding: 20px;
+    border-radius: 5px;
+}
+.body{
+    height: 100%;
+    display: flex;
 }
