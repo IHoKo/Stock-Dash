@@ -1,1 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dash Application Explanation</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        code {
+            background-color: #eee;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Explanation of Dash Application Code</h1>
+    <p>This document explains the functionality of a Dash application for visualizing stock data. Below is a breakdown of each part of the provided code.</p>
+
+    <h2>Imports and Initial Setup</h2>
+    <pre><code>import dash
+from dash import dcc, html
+import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output, State
+import pandas_datareader.data as web
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+from datetime import datetime
+import pandas as pd
+import yfinance as yf
+yf.pdr_override()
+import plotly.io as pio
+
+pio.templates.default = "plotly_dark"</code></pre>
+    <p>These lines import the necessary libraries, including Dash for building the web application, Plotly for creating graphs, and data sources for fetching stock data. It also sets the default Plotly template to "plotly_dark".</p>
+
+    <h2>Creating the Dash App</h2>
+    <pre><code>app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SPACELAB], suppress_callback_exceptions=True)</code></pre>
+    <p>This line initializes the Dash app and applies a Bootstrap theme.</p>
+
+    <h2>Defining Styles</h2>
+    <pre><code>SIDEBAR_STYLE = {...}
+CONTENT_STYLE = {...}</code></pre>
+    <p>These dictionaries define the CSS styles for the sidebar and content areas of the app.</p>
+
+    <h2>Loading Data</h2>
+    <pre><code>nsdq = pd.read_csv('data/nasdaq_screener.csv')
+nsdq.set_index('Symbol', inplace=True)
+options = [{'label': f"{tic} {nsdq.loc[tic]['Name']}", 'value': tic} for tic in nsdq.index]</code></pre>
+    <p>This section reads the NASDAQ screener data from a CSV file, sets the index to the stock symbol, and prepares a list of options for the dropdown menu in the sidebar.</p>
+
+    <h2>Creating the Sidebar</h2>
+    <pre><code>sidebar = html.Div([...], style=SIDEBAR_STYLE)</code></pre>
+    <p>This part of the code creates the sidebar with sliders, dropdowns, a date picker, and a submit button.</p>
+
+    <h2>Creating the Content Area</h2>
+    <pre><code>content = html.Div([...], style=CONTENT_STYLE)</code></pre>
+    <p>This part creates the main content area where graphs will be displayed.</p>
+
+    <h2>Defining the Layout</h2>
+    <pre><code>app.layout = html.Div([dcc.Location(id='url'), sidebar, content])</code></pre>
+    <p>This line defines the overall layout of the app, including the sidebar and content areas.</p>
+
+    <h2>Callback Function</h2>
+    <pre><code>@app.callback(
+    Output('my_graph', 'figure'),
+    Output('my_graph_volume', 'figure'),
+    [Input('submit_button', 'n_clicks')],
+    [Input('my_slider', 'value')],
+    [Input('my_pie_slider', 'value')],
+    [State('my_ticker_symbol', 'value'),
+     State('my_date_picker', 'start_date'),
+     State('my_date_picker', 'end_date')])
+def update_graph(n_clicks, width_scatter, height_pie, stock_ticker, start_date, end_date):
+    start = datetime.strptime(start_date[:10], '%Y-%m-%d')
+    end = datetime.strptime(end_date[:10], '%Y-%m-%d')
+    
+    fig_close  = go.Figure()
+    fig_volume = make_subplots(rows=2, cols=1, vertical_spacing=0.3, subplot_titles=("Volume Average", "Closing Price Average"), specs=[[{'type':'domain'}], [{'type':'domain'}]])
+
+    labels, vol_values, clo_values = [], [], []
+
+    for tic in stock_ticker:
+        df = web.get_data_yahoo(tic, start=start, end=end)
+        labels.append(tic)
+        vol_values.append(round(df.Volume.mean()))
+        clo_values.append(round(df.Close.mean()))
+
+        fig_close.add_trace(go.Scatter(x=df.index, y=df.Close, mode='lines', showlegend=True, name=tic))
+
+    fig_close.update_layout(title=', '.join(stock_ticker), xaxis_title="Date", yaxis_title="Closing Prices", plot_bgcolor='#1E1E1E', paper_bgcolor='#1E1E1E', font=dict(family="Helvetica Neue", size=15, color="#FFFFFF"), showlegend=False)
+    fig_close.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
+    fig_close.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True, showgrid=False)
+    fig_close.update_layout(width=int(width_scatter))
+
+    fig_volume.add_trace(go.Pie(labels=labels, values=vol_values, hole=.5, hoverinfo="label+percent+name", textinfo='value'), 1, 1)
+    fig_volume.add_trace(go.Pie(labels=labels, values=clo_values, hole=.5, hoverinfo="label+percent+name", textinfo='value'), 2, 1)
+    fig_volume.update_layout(plot_bgcolor='#1E1E1E', paper_bgcolor='#1E1E1E', font=dict(family="Helvetica Neue", size=15, color="#FFFFFF"))
+    fig_volume.layout.annotations[0].update(y=1.1, x=1.01)
+    fig_volume.layout.annotations[1].update(y=.4, x=1.1)
+    fig_volume.update_annotations(font=dict(family="Helvetica Neue", size=15))
+    fig_volume.update_layout(height=int(height_pie))
+
+    return fig_close, fig_volume</code></pre>
+    <p>The callback function updates the graphs based on user inputs from the sidebar. It fetches stock data using Yahoo Finance, processes it, and updates the figures accordingly. The function handles both the closing prices graph and the volume averages pie charts.</p>
+
+    <h2>Running the App</h2>
+    <pre><code>if __name__ == '__main__':
+    app.run_server(debug=True)</code></pre>
+    <p>This block runs the Dash app in debug mode, allowing you to test and view the app locally.</p>
+
+</body>
+</html>
 
