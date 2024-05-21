@@ -40,7 +40,7 @@ The goal of this project is to develop a dashboard that allows users to select o
   
 ## Screenshots
 
-![Dashboard Overview](dash1.png)
+![Dashboard Overview](dash.png)
 *Description: This screenshot shows the overview of the dashboard with key metrics displayed.*
 
 ## License
